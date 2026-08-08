@@ -47,7 +47,7 @@ class MyHomePage extends StatelessWidget {
                     const Icon(Icons.account_balance_wallet, size: 64, color: AppTheme.primary),
                     const SizedBox(height: 16),
                     const Text(
-                      'ระบบบันทึกและจัดการบัญชีองค์กร',
+                      'ระบบบันทึกและจัดการรายรับ-รายจ่าย',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primary),
                     ),

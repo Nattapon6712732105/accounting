@@ -18,12 +18,19 @@ class AppDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppTheme.primary),
+            decoration: const BoxDecoration(gradient: AppTheme.luxuryGradient),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.account_balance, size: 56, color: Colors.white),
-                SizedBox(height: 8),
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.goldGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.account_balance, size: 32, color: Colors.white),
+                ),
+                SizedBox(height: 10),
                 Text(
                   'ENTERPRISE ACCOUNTING',
                   style: TextStyle(
@@ -35,7 +42,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'ระบบจัดการบัญชีองค์กร',
+                  'ระบบจัดการรายรับ-รายจ่าย',
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -47,7 +54,7 @@ class AppDrawer extends StatelessWidget {
           _menuItem(context, index: 3, icon: Icons.person_outline, label: 'โปรไฟล์'),
           const Divider(height: 24),
           ListTile(
-            leading: const Icon(Icons.add_circle_outline, color: AppTheme.accent),
+            leading: const Icon(Icons.add_circle_outline, color: AppTheme.goldDark),
             title: const Text('เพิ่มรายการใหม่'),
             onTap: () {
               Navigator.pop(context);

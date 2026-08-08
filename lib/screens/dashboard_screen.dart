@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/formatters.dart';
 import '../core/theme.dart';
 import '../models/model.dart';
 import '../services/api_service.dart';
@@ -107,11 +108,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'สรุปยอดเดือนนี้',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary),
-            ),
-            const SizedBox(height: 12),
+            _buildHeroHeader(summary),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -142,10 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fullWidth: true,
             ),
             const SizedBox(height: 24),
-            const Text(
-              'การเข้าถึงด่วน',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary),
-            ),
+            _sectionTitle('การเข้าถึงด่วน'),
             const SizedBox(height: 12),
             GridView.count(
               crossAxisCount: 4,
@@ -156,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context,
                   icon: Icons.add_circle_outline,
                   label: 'เพิ่มรายการ',
-                  color: AppTheme.accent,
+                  color: AppTheme.goldDark,
                   onTap: () => Navigator.pushNamed(context, '/add_transaction'),
                 ),
                 _quickAction(
@@ -183,10 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
-              'รายการล่าสุด',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary),
-            ),
+            _sectionTitle('รายการล่าสุด'),
             const SizedBox(height: 12),
             if (_recent.isEmpty)
               const Padding(
@@ -201,6 +193,201 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            gradient: AppTheme.goldGradient,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroHeader(SummaryModel summary) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.luxuryGradient,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.28),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.goldGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'สรุปยอดเดือนนี้',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _monthLabel(),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'คงเหลือ',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                '฿',
+                style: TextStyle(
+                  color: AppTheme.goldLight,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    formatAmount(summary.balance),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _heroMiniStat(
+                  label: 'รายรับ',
+                  amount: summary.totalIncome,
+                  color: AppTheme.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _heroMiniStat(
+                  label: 'รายจ่าย',
+                  amount: summary.totalExpense,
+                  color: AppTheme.danger,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroMiniStat({
+    required String label,
+    required double amount,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            label == 'รายรับ' ? Icons.trending_up : Icons.trending_down,
+            color: color,
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
+                Text(
+                  '฿${formatAmount(amount)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _monthLabel() {
+    const months = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    ];
+    final now = DateTime.now();
+    return '${months[now.month - 1]} ${now.year + 543}';
   }
 
   Widget _quickAction(

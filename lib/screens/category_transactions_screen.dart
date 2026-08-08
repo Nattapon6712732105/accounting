@@ -7,19 +7,33 @@ import '../services/api_service.dart';
 import '../services/app_state.dart';
 import '../widgets/transaction_tile.dart';
 
-class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+class CategoryTransactionsScreen extends StatefulWidget {
+  final String categoryId;
+  final String categoryName;
+  final String type;
+  final IconData icon;
+  final Color color;
+
+  const CategoryTransactionsScreen({
+    super.key,
+    required this.categoryId,
+    required this.categoryName,
+    required this.type,
+    required this.icon,
+    required this.color,
+  });
 
   @override
-  State<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<CategoryTransactionsScreen> createState() =>
+      _CategoryTransactionsScreenState();
 }
 
-class _TransactionsScreenState extends State<TransactionsScreen> {
+class _CategoryTransactionsScreenState extends State<CategoryTransactionsScreen> {
   List<TransactionModel> _transactions = [];
   bool _isLoading = true;
-  bool _isDeleting = false;
   String? _error;
-  String _filter = 'all';
+
+  bool get _isIncome => widget.type == 'income';
 
   @override
   void initState() {
@@ -36,17 +50,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   void _onDataChanged() => _load();
 
-  List<TransactionModel> get _filtered {
-    switch (_filter) {
-      case 'income':
-        return _transactions.where((t) => t.isIncome).toList();
-      case 'expense':
-        return _transactions.where((t) => !t.isIncome).toList();
-      default:
-        return _transactions;
-    }
-  }
-
   Future<void> _load() async {
     setState(() {
       _isLoading = true;
@@ -55,7 +58,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     try {
       final token = ApiService.token;
       if (token == null) throw Exception('กรุณาล็อกอินก่อนใช้งาน');
-      final result = await ApiService.getTransactions(token: token);
+      final result = await ApiService.getTransactions(
+        token: token,
+        type: widget.type,
+        category: widget.categoryId,
+      );
       if (!mounted) return;
       setState(() {
         _transactions = (result['transactions'] as List<TransactionModel>).toList();
@@ -70,15 +77,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
-  void _openAdd([TransactionModel? transaction]) {
-    Navigator.pushNamed(context, '/add_transaction', arguments: transaction);
-  }
-
   void _showSnack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  Future<void> _openEdit(TransactionModel t) async {
+    await Navigator.pushNamed(context, '/add_transaction', arguments: t);
   }
 
   Future<bool> _confirmDelete(TransactionModel t) async {
@@ -121,10 +128,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Future<void> _deleteTransaction(TransactionModel t) async {
-    setState(() {
-      _isDeleting = true;
-      _transactions.removeWhere((x) => x.id == t.id);
-    });
     try {
       await ApiService.deleteTransaction(token: ApiService.token!, id: t.id);
       AppState.notifyTransactionsChanged();
@@ -132,91 +135,82 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     } catch (e) {
       _showSnack('ลบไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}');
       _load();
-    } finally {
-      if (mounted) setState(() => _isDeleting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return _ErrorView(message: _error!, onRetry: _load);
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.categoryName)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isDeleting ? null : _openAdd,
-        backgroundColor: AppTheme.goldDark,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text(
-          'เพิ่มรายการ',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              sliver: SliverToBoxAdapter(child: _buildHeader()),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              sliver: SliverToBoxAdapter(child: _buildFilterBar()),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: _filtered.isEmpty
-                  ? const SliverToBoxAdapter(child: _EmptyView())
-                  : SliverList.builder(
-                      itemCount: _filtered.length,
-                      itemBuilder: (context, index) {
-                        final t = _filtered[index];
-                        return Dismissible(
-                          key: ValueKey(t.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 24),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.dangerGradient,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          confirmDismiss: (_) => _confirmDelete(t),
-                          onDismissed: (_) => _deleteTransaction(t),
-                          child: TransactionTile(
-                            transaction: t,
-                            onTap: () => _openAdd(t),
-                            onLongPress: () => _openAdd(t),
-                            onDelete: () async {
-                              if (await _confirmDelete(t)) await _deleteTransaction(t);
+      appBar: AppBar(title: Text(widget.categoryName)),
+      body: _error != null
+          ? _ErrorView(message: _error!, onRetry: _load)
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    sliver: SliverToBoxAdapter(child: _buildHeader()),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: _transactions.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: _EmptyView(type: widget.type),
+                          )
+                        : SliverList.builder(
+                            itemCount: _transactions.length,
+                            itemBuilder: (context, index) {
+                              final t = _transactions[index];
+                              return Dismissible(
+                                key: ValueKey(t.id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 24),
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    gradient: AppTheme.dangerGradient,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.white,
+                                    size: 26,
+                                  ),
+                                ),
+                                confirmDismiss: (_) => _confirmDelete(t),
+                                onDismissed: (_) => _deleteTransaction(t),
+                                child: TransactionTile(
+                                  transaction: t,
+                                  onTap: () => _openEdit(t),
+                                  onLongPress: () => _openEdit(t),
+                                  onDelete: () async {
+                                    if (await _confirmDelete(t)) {
+                                      await _deleteTransaction(t);
+                                    }
+                                  },
+                                ),
+                              );
                             },
                           ),
-                        );
-                      },
-                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildHeader() {
+    final total = _transactions.fold<double>(0, (sum, t) => sum + t.amount);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -238,93 +232,53 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               gradient: AppTheme.goldGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+            child: Icon(widget.icon, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'รายการบัญชี',
-                  style: TextStyle(
+                  '${widget.categoryName} · ${_isIncome ? 'รายรับ' : 'รายจ่าย'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'จัดการรายรับ-รายจ่ายอย่างเป็นระเบียบ',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  '${_transactions.length} รายการ',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: AppTheme.goldGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${_filtered.length} รายการ',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'รวมยอด',
+                style: TextStyle(color: Colors.white70, fontSize: 11),
               ),
-            ),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '฿${formatAmount(total)}',
+                  style: const TextStyle(
+                    color: AppTheme.goldLight,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterBar() {
-    return Row(
-      children: [
-        _filterPill('all', 'ทั้งหมด'),
-        const SizedBox(width: 8),
-        _filterPill('income', 'รายรับ'),
-        const SizedBox(width: 8),
-        _filterPill('expense', 'รายจ่าย'),
-      ],
-    );
-  }
-
-  Widget _filterPill(String value, String label) {
-    final selected = _filter == value;
-    return GestureDetector(
-      onTap: () => setState(() => _filter = value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          gradient: selected ? AppTheme.goldGradient : null,
-          color: selected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: selected ? AppTheme.gold : const Color(0xFFE5E0D3),
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppTheme.gold.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : AppTheme.textMuted,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
       ),
     );
   }
@@ -361,10 +315,13 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _EmptyView extends StatelessWidget {
-  const _EmptyView();
+  final String type;
+
+  const _EmptyView({required this.type});
 
   @override
   Widget build(BuildContext context) {
+    final isIncome = type == 'income';
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       decoration: BoxDecoration(
@@ -380,11 +337,15 @@ class _EmptyView extends StatelessWidget {
               gradient: AppTheme.goldGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.receipt_long, color: Colors.white, size: 32),
+            child: Icon(
+              isIncome ? Icons.trending_up : Icons.trending_down,
+              color: Colors.white,
+              size: 32,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
-            'ยังไม่มีรายการ',
+            'ยังไม่มีรายการในหมวดหมู่นี้',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppTheme.textMain,
