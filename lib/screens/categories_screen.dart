@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/app_state.dart';
 import '../widgets/breakdown_section.dart';
 import '../widgets/category_grid_item.dart';
+import 'category_transactions_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -133,6 +134,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       name: c.name,
                       icon: categoryIcon(c.icon),
                       color: AppTheme.success,
+                      total: _categoryTotal(c, 'income'),
+                      onTap: () => _openCategory(c, type: 'income', color: AppTheme.success),
                     ),
                   )
                   .toList(),
@@ -156,11 +159,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       name: c.name,
                       icon: categoryIcon(c.icon),
                       color: AppTheme.danger,
+                      total: _categoryTotal(c, 'expense'),
+                      onTap: () => _openCategory(c, type: 'expense', color: AppTheme.danger),
                     ),
                   )
                   .toList(),
             ),
         ],
+      ),
+    );
+  }
+
+  double _categoryTotal(CategoryModel c, String type) {
+    for (final b in _breakdown) {
+      if (b.type == type && (b.category == c.name || b.category == c.id)) {
+        return b.total;
+      }
+    }
+    return 0;
+  }
+
+  void _openCategory(CategoryModel c, {required String type, required Color color}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryTransactionsScreen(
+          categoryId: c.id,
+          categoryName: c.name,
+          type: type,
+          icon: categoryIcon(c.icon),
+          color: color,
+        ),
       ),
     );
   }

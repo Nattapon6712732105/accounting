@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/formatters.dart';
 import '../core/theme.dart';
 
 class DashboardStatCard extends StatelessWidget {
@@ -23,9 +24,20 @@ class DashboardStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        gradient: LinearGradient(
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,8 +47,11 @@ class DashboardStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [color.withValues(alpha: 0.20), color.withValues(alpha: 0.06)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
@@ -45,12 +60,15 @@ class DashboardStatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            '฿${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: fullWidth ? 24 : 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textMain,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '฿${formatAmount(amount)}',
+              style: TextStyle(
+                fontSize: fullWidth ? 26 : 21,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textMain,
+              ),
             ),
           ),
         ],
